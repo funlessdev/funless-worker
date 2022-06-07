@@ -15,8 +15,8 @@
 # specific language governing permissions and limitations
 # under the License.
 #
-[tool]
-[tool.commitizen]
-name = "cz_conventional_commits"
-version = "1.0.0"
-tag_format = "$version"
+
+import Config
+config :worker, Worker.Domain.Ports.Containers, adapter: Worker.Adapters.Containers.Docker
+
+config :worker, Worker.Domain.Ports.FunctionStorage, adapter: Worker.Adapters.FunctionStorage.ETS

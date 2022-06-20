@@ -11,9 +11,10 @@ iex -S mix
 
 To test the main worker behaviour, run:
 ```
-GenServer.call(:worker, {:prepare, %{name: "hellojs", image: "node:lts-alpine", main_file: "/opt/index.js", archive: "js/hello.tar.gz"}})
-GenServer.call(:worker, {:invoke, %{name: "hellojs", image: "node:lts-alpine", main_file: "/opt/index.js", archive: "js/hello.tar.gz"}})
-GenServer.call(:worker, {:cleanup, %{name: "hellojs", image: "node:lts-alpine", main_file: "/opt/index.js", archive: "js/hello.tar.gz"}})
+function = %{name: "hellojs", image: "nodejs", main_file: "index.js", archive: "js/hello.js"}
+GenServer.call(:worker, {:prepare, function})
+GenServer.call(:worker, {:invoke, function})
+GenServer.call(:worker, {:cleanup, function})
 ```
 
 The `:prepare` call is optional, as `:invoke` creates the container if none is found.
@@ -30,12 +31,13 @@ mix release
 
 And on a different terminal session, start the interactive session like this:
 ```
-iex -S mix --name n1@127.0.0.1 --cookie default_secret
+iex --name n1@127.0.0.1 --cookie default_secret -S mix
 ```
 
 And run:
 ```
-GenServer.call({:worker, :"worker@127.0.0.1"}, {:invoke, %{name: "hellojs", image: "node:lts-alpine", main_file: "/opt/index.js", archive: "js/hello.tar.gz"}})
+function = %{name: "hellojs", image: "nodejs", main_file: "index.js", archive: "js/hello.js"}
+GenServer.call({:worker, :"worker@127.0.0.1"}, {:invoke, function})
 ```
 
 The `--cookie` and `--name` parameters can vary; the `--cookie` must be the same used in compiling the release, defined in `rel/env.sh.eex`.

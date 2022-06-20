@@ -20,7 +20,7 @@ defmodule Worker.Adapters.FunctionStorage.ETS.WriteServer do
   @moduledoc """
     Implements GenServer behaviour; represents a process having exclusive writing rights on an underlying ETS table.
 
-    The {function_name, container_name} couples are inserted or deleted by using GenServer.call() on this process; the table name is currently hardcoded to
+    The {function_name, container} couples are inserted or deleted by using GenServer.call() on this process; the table name is currently hardcoded to
     :functions_containers.
   """
   use GenServer, restart: :permanent
@@ -37,14 +37,14 @@ defmodule Worker.Adapters.FunctionStorage.ETS.WriteServer do
   end
 
   @impl true
-  def handle_call({:insert, function_name, container_name}, _from, table) do
-    :ets.insert(table, {function_name, container_name})
-    {:reply, {:ok, {function_name, container_name}}, table}
+  def handle_call({:insert, function_name, container}, _from, table) do
+    :ets.insert(table, {function_name, container})
+    {:reply, {:ok, {function_name, container}}, table}
   end
 
   @impl true
-  def handle_call({:delete, function_name, container_name}, _from, table) do
-    :ets.delete_object(table, {function_name, container_name})
-    {:reply, {:ok, {function_name, container_name}}, table}
+  def handle_call({:delete, function_name, container}, _from, table) do
+    :ets.delete_object(table, {function_name, container})
+    {:reply, {:ok, {function_name, container}}, table}
   end
 end

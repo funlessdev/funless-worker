@@ -33,13 +33,13 @@ defmodule Worker.Nif.Fn do
   end
 
   @doc """
-    Runs the function wrapped by the `_container_name` container.
+    Gets the logs of the `_container_name` container.
 
     ## Parameters
-      - _container_name: name of the container that will be used to run the function
+      - _container_name: name of the container
       - _docker_host: path of the docker socket in the current system
   """
-  def run_function(_container_name, _docker_host) do
+  def container_logs(_container_name, _docker_host) do
     :erlang.nif_error(:nif_not_loaded)
   end
 

@@ -23,6 +23,8 @@ defmodule Worker.Adapters.Containers.Docker do
   @behaviour Worker.Domain.Ports.Containers
   alias Worker.Nif.Fn
 
+  require Logger
+
   @doc """
     Checks the DOCKER_HOST environment variable for the docker socket path. If an incorrect path is found, the default is used instead.
 
@@ -57,6 +59,8 @@ defmodule Worker.Adapters.Containers.Docker do
         container_name
       ) do
     socket = docker_socket()
+
+    Logger.info("Containers: Creating container for function '#{worker_function.name}'")
 
     Fn.prepare_container(
       worker_function,

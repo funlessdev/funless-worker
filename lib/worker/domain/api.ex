@@ -61,6 +61,8 @@ defmodule Worker.Domain.Api do
   alias Worker.Domain.Ports.Containers
   alias Worker.Domain.Ports.FunctionStorage
 
+  require Elixir.Logger
+
   @doc """
     Checks if the function with the given `function_name` has an associated container in the underlying function storage.
 
@@ -69,10 +71,8 @@ defmodule Worker.Domain.Api do
     ## Parameters
       - %{name: function_name}: generic struct with a `name` field, containing the function name
   """
-  @spec function_has_container?(Struct.t()) :: Boolean.t()
-  def function_has_container?(%{
-        name: function_name
-      }) do
+  @spec function_has_containers?(Struct.t()) :: boolean()
+  def function_has_containers?(%{name: function_name}) do
     case FunctionStorage.get_function_containers(function_name) do
       {:ok, _} -> true
       {:error, _} -> false
@@ -82,7 +82,7 @@ defmodule Worker.Domain.Api do
   @doc """
     Creates a container for the given function; in case of successful creation, the {function, container} couple is inserted in the function storage.
 
-    Returns {:ok, container} if the container is created, otherwise forwards {:error, err} from the Containers implementation.
+    Returns {:ok, container.name} if the container is created, otherwise forwards {:error, err} from the Containers implementation.
 
     ## Parameters
       - %{...}: generic struct with all the fields required by Worker.Domain.Function
@@ -94,8 +94,6 @@ defmodule Worker.Domain.Api do
         archive: archive_name,
         main_file: main_file
       }) do
-    container_name = function_name <> "-funless-container"
-
     function = %Worker.Domain.Function{
       name: function_name,
       image: image_name,
@@ -103,16 +101,24 @@ defmodule Worker.Domain.Api do
       main_file: main_file
     }
 
-    result = Containers.prepare_container(function, container_name)
+    container_name = function_name <> "-funless-container"
 
-    case result do
-      {:ok, container = %Worker.Domain.Container{name: container_name}} ->
-        FunctionStorage.insert_function_container(function_name, container)
-        {:ok, container_name}
+    Containers.prepare_container(function, container_name)
+    |> store_prepared_container(function_name)
+  end
 
-      _ ->
-        result
-    end
+  defp store_prepared_container(
+         {:ok, container = %Worker.Domain.Container{name: container_name}},
+         function_name
+       ) do
+    Logger.info("API: Container prepared #{container_name}")
+    FunctionStorage.insert_function_container(function_name, container)
+    {:ok, container_name}
+  end
+
+  defp store_prepared_container({:error, err}, _) do
+    Logger.error("API: Container preparation failed: #{err}")
+    {:error, err}
   end
 
   @doc """
@@ -144,21 +150,24 @@ defmodule Worker.Domain.Api do
       main_file: main_file
     }
 
-    containers = FunctionStorage.get_function_containers(function_name)
+    FunctionStorage.get_function_containers(function_name)
+    |> run_function_with_container(function, args)
+  end
 
-    case containers do
-      {:ok, {_, [container | _]}} ->
-        Containers.run_function(function, args, container)
+  defp run_function_with_container({:ok, {_, [container | _]}}, function, args) do
+    Logger.info("API: Running function #{function.name} with container: #{container.name}")
+    Containers.run_function(function, args, container)
+  end
 
-      {:error, err} ->
-        {:error, {:nocontainer, err}}
-    end
+  defp run_function_with_container({:error, err}, _, _) do
+    Logger.error("API: Error running function: #{err}")
+    {:error, err}
   end
 
   @doc """
     Removes the first container associated with the given function.
 
-    Returns {:ok, container} if the cleanup is successful;
+    Returns {:ok, container_name} if the cleanup is successful;
     returns {:error, err} if any error is encountered (both while removing the container and when searching for it).
 
     ## Parameters
